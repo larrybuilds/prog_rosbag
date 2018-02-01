@@ -1,0 +1,11 @@
+<launch>
+
+    <!-- Launch recorder node -->
+    <node pkg="prog_rosbag" type="prog_record" name="recorder_node" output="screen" respawn="true">
+        <param name="topic_name_file"  value="$(find prog_rosbag)/config/topics.config"/>
+        <param name="data_directory"   value="/home/lawrence/Desktop"/>
+        <param name="file_prefix"      value="turtle_test_bag"/>
+    </node>
+
+    <node pkg="turtlesim" type="turtlesim_node" name="turtle_sim_node" output="screen"/>
+</launch>
