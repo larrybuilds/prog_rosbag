@@ -5,6 +5,8 @@
         <param name="topic_name_file"  value="$(find prog_rosbag)/config/topics.config"/>
         <param name="data_directory"   value="/home/lawrence/Desktop"/>
         <param name="file_prefix"      value="turtle_test_bag"/>
+        <param name="start_topic"      value="/record/start"/>
+        <param name="stop_topic"       value="/record/stop"/>
     </node>
 
     <node pkg="turtlesim" type="turtlesim_node" name="turtle_sim_node" output="screen"/>

@@ -117,14 +117,15 @@ RecorderOptions::RecorderOptions() :
 
 // Recorder
 
-Recorder::Recorder(RecorderOptions const& options) :
+Recorder::Recorder(RecorderOptions const& options, std::string stopTopic) :
     options_(options),
     num_subscribers_(0),
     exit_code_(0),
     queue_size_(0),
     split_count_(0),
     writing_enabled_(true),
-    stop_signal_(false)
+    stop_signal_(false),
+    stop_topic_(stopTopic)
 {
 }
 
@@ -154,7 +155,7 @@ int Recorder::run() {
     }
 
     ros::NodeHandle nh;
-    stop_sub_ = nh.subscribe("/record/stop",1,&Recorder::stop,this);
+    stop_sub_ = nh.subscribe(stop_topic_.c_str(),1,&Recorder::stop,this);
 
     if (!nh.ok())
         return 0;

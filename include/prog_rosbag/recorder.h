@@ -116,7 +116,7 @@ struct ROSBAG_DECL RecorderOptions
 class ROSBAG_DECL Recorder
 {
 public:
-    Recorder(RecorderOptions const& options);
+    Recorder(RecorderOptions const& options, std::string stopTopic);
 
     void doTrigger();
 
@@ -187,6 +187,7 @@ private:
 
     bool                          stop_signal_;          // Signal to stop current recording
     ros::Subscriber               stop_sub_;
+    std::string                   stop_topic_;
 };
 
 } // namespace rosbag
