@@ -21,7 +21,7 @@ catkin_package(
   INCLUDE_DIRS include
   CATKIN_DEPENDS rosbag_storage rosconsole roscpp topic_tools xmlrpcpp)
 
-add_library(recorder src/recorder.cpp)
+add_library(recorder src/pt_recorder.cpp)
 
 target_link_libraries(recorder ${catkin_LIBRARIES} ${Boost_LIBRARIES})
 

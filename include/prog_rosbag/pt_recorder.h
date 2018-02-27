@@ -46,9 +46,11 @@
 #include <string>
 #include <vector>
 
+#include <boost/thread.hpp>
 #include <boost/thread/condition.hpp>
 #include <boost/thread/mutex.hpp>
 #include <boost/regex.hpp>
+#include <boost/lexical_cast.hpp>
 
 #include <ros/ros.h>
 #include <ros/time.h>
@@ -61,9 +63,7 @@
 #include "rosbag/stream.h"
 #include "rosbag/macros.h"
 
-namespace rosbag {
-
-class ROSBAG_DECL OutgoingMessage
+class OutgoingMessage
 {
 public:
     OutgoingMessage(std::string const& _topic, topic_tools::ShapeShifter::ConstPtr _msg, boost::shared_ptr<ros::M_string> _connection_header, ros::Time _time);
@@ -74,7 +74,7 @@ public:
     ros::Time                           time;
 };
 
-class ROSBAG_DECL OutgoingQueue
+class OutgoingQueue
 {
 public:
     OutgoingQueue(std::string const& _filename, std::queue<OutgoingMessage>* _queue, ros::Time _time);
@@ -84,9 +84,9 @@ public:
     ros::Time                    time;
 };
 
-struct ROSBAG_DECL RecorderOptions
+struct PRecorderOptions
 {
-    RecorderOptions();
+    PRecorderOptions();
 
     bool            trigger;
     bool            record_all;
@@ -96,7 +96,7 @@ struct ROSBAG_DECL RecorderOptions
     bool            append_date;
     bool            snapshot;
     bool            verbose;
-    CompressionType compression;
+    rosbag::CompressionType compression;
     std::string     prefix;
     std::string     name;
     boost::regex    exclude_regex;
@@ -113,10 +113,11 @@ struct ROSBAG_DECL RecorderOptions
     std::vector<std::string> topics;
 };
 
-class ROSBAG_DECL Recorder
+class PRecorder
 {
 public:
-    Recorder(RecorderOptions const& options);
+    PRecorder(PRecorderOptions const& options);
+    ~PRecorder();
 
     void doTrigger();
 
@@ -125,8 +126,7 @@ public:
     boost::shared_ptr<ros::Subscriber> subscribe(std::string const& topic);
 
     int run();
-
-    void stop(const std_msgs::UInt8::ConstPtr& msg);
+    void stop();
 
 private:
     void printUsage();
@@ -147,22 +147,24 @@ private:
     bool checkDuration(const ros::Time&);
     void doRecordSnapshotter();
     void doCheckMaster(ros::TimerEvent const& e, ros::NodeHandle& node_handle);
-
+    void unsubscribe();
     bool shouldSubscribeToTopic(std::string const& topic, bool from_node = false);
 
     template<class T>
     static std::string timeToStr(T ros_t);
 
 private:
-    RecorderOptions               options_;
+    PRecorderOptions               options_;
 
-    Bag                           bag_;
+    rosbag::Bag                           bag_;
 
     std::string                   target_filename_;
     std::string                   write_filename_;
 
     std::set<std::string>         currently_recording_;  //!< set of currenly recording topics
     int                           num_subscribers_;      //!< used for book-keeping of our number of subscribers
+
+    std::vector< boost::shared_ptr<ros::Subscriber> > sub_list_;
 
     int                           exit_code_;            //!< eventual exit code
 
@@ -171,6 +173,8 @@ private:
     std::queue<OutgoingMessage>*  queue_;                //!< queue for storing
     uint64_t                      queue_size_;           //!< queue size
     uint64_t                      max_queue_size_;       //!< max queue size
+
+    boost::thread                 record_thread;
 
     uint64_t                      split_count_;          //!< split count
 
@@ -186,9 +190,6 @@ private:
     ros::WallTime                 warn_next_;
 
     bool                          stop_signal_;          // Signal to stop current recording
-    ros::Subscriber               stop_sub_;
 };
-
-} // namespace rosbag
 
 #endif

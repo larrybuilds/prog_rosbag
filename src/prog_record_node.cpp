@@ -6,15 +6,16 @@
   */
 
 #include <ros/ros.h>
-#include <prog_rosbag/recorder.h>
+#include <prog_rosbag/pt_recorder.h>
 #include <std_msgs/UInt8.h>
 #include <fstream>
 #include <string>
 #include <boost/filesystem.hpp>
 
 static bool shouldStartBag = false;
+static bool shouldStopBag = false;
 
-void extractTopicNames(rosbag::RecorderOptions* opts, std::string const* topic_name_file) {
+void extractTopicNames(PRecorderOptions* opts, std::string const* topic_name_file) {
 
     std::ifstream fd(topic_name_file->c_str());
     std::string line;
@@ -31,6 +32,10 @@ void extractTopicNames(rosbag::RecorderOptions* opts, std::string const* topic_n
 
 void startCallback(const std_msgs::UInt8::ConstPtr& msg) {
     shouldStartBag = true;
+}
+
+void stopCallback(const std_msgs::UInt8::ConstPtr& msg) {
+    shouldStopBag = true;
 }
 
 int main(int argc, char** argv) {
@@ -58,23 +63,15 @@ int main(int argc, char** argv) {
     }
 
     // Handle the output directory already existing
-    int app = 0;
     boost::filesystem::path out_dir(data_dir.c_str());
-    boost::filesystem::path temp_app(data_dir.c_str());
     // Check for existance
-    if(boost::filesystem::exists(out_dir)) {
-       ROS_WARN("Output directory already exists. Appending identifier. ");
-       while(boost::filesystem::exists(temp_app)) {
-           temp_app = out_dir;
-           temp_app /= std::to_string(app++);
-       }
+    if(!boost::filesystem::exists(out_dir)) {
+       ROS_WARN("Output directory doesnt exists, creating it.");
+       boost::filesystem::create_directory(out_dir);
     }
-    out_dir = temp_app;
-    ROS_INFO("Creating %s",out_dir.string().c_str());
-    boost::filesystem::create_directory(out_dir);
 
     // Create rosbag options
-    rosbag::RecorderOptions opts;
+    PRecorderOptions opts;
 
     // Extract topic names, if there are any
     if( topic_name_file == "" ) {
@@ -108,11 +105,12 @@ int main(int argc, char** argv) {
 
     // Setup subscribers
     ros::Subscriber start_sub = nh.subscribe(start_topic, 1, startCallback);
+    ros::Subscriber stop_sub  = nh.subscribe(stop_topic, 1, stopCallback);
 
     ros::Rate loop_rate(10);
 
     // Run the recorder
-    rosbag::Recorder recorder(opts,stop_topic);
+    PRecorder recorder(opts);
     int result;
 
     // Run while master is still running
@@ -123,6 +121,10 @@ int main(int argc, char** argv) {
             ROS_INFO("Starting bag for topics found in %s", topic_name_file.c_str());
             result = recorder.run();
             shouldStartBag = false;
+        }
+        if( shouldStopBag ) {
+            recorder.stop();
+            shouldStopBag = false;
         }
 
         loop_rate.sleep();

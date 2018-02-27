@@ -12,3 +12,6 @@ src: programmatic rosbag source files
 
 The topic names that should be recorded are saved in a config file in the config folder. Each line of the file must contain a single topic with a single newline character at the end.
 
+## Controlling the recording
+
+The node requires specification of a start and stop topic. Any message published to these topics is interpreted as a indication that the bag should be start/stopped.
